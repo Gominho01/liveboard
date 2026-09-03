@@ -1,8 +1,10 @@
 import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
+import { ActivityFeed } from "../components/ActivityFeed";
 import { BoardColumn } from "../components/BoardColumn";
 import { CardModal } from "../components/CardModal";
+import { PresenceList } from "../components/PresenceList";
 import { useBoardSocket } from "../hooks/useBoardSocket";
 import { fetchDefaultBoard } from "../services/api";
 import { emitCardCreate, emitCardDelete, emitCardMove, emitCardUpdate } from "../services/socket";
@@ -16,6 +18,8 @@ export function BoardPage() {
   const logout = useAuthStore((s) => s.logout);
 
   const board = useBoardStore((s) => s.board);
+  const presence = useBoardStore((s) => s.presence);
+  const activity = useBoardStore((s) => s.activity);
   const setBoard = useBoardStore((s) => s.setBoard);
   const applyCardUpsert = useBoardStore((s) => s.applyCardUpsert);
   const applyCardDelete = useBoardStore((s) => s.applyCardDelete);
@@ -106,6 +110,7 @@ export function BoardPage() {
           {user && <p className="board-subtitle">Signed in as {user.name}</p>}
         </div>
         <div className="board-header-right">
+          <PresenceList users={presence} />
           <button type="button" className="link-button" onClick={logout}>
             Log out
           </button>
@@ -125,6 +130,8 @@ export function BoardPage() {
             ))}
           </div>
         </DndContext>
+
+        <ActivityFeed entries={activity} />
       </div>
 
       {modalState && (

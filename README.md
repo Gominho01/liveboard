@@ -1,6 +1,6 @@
 # 🗂️ LiveBoard — Real-Time Collaborative Kanban
 
-> Status: **ideation** — this README documents the initial idea, feature scope, and technical decisions to serve as a reference as the project evolves.
+> Status: **phase 1 (MVP) implemented** — run `docker compose up -d && cd backend && npm run prisma:migrate` locally to try it.
 
 ## 1. Overview
 

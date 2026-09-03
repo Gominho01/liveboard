@@ -1,4 +1,4 @@
-import type { AuthResponse } from "../types";
+import type { AuthResponse, BoardData } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3333";
 
@@ -27,5 +27,11 @@ export function loginRequest(email: string, password: string): Promise<AuthRespo
   return request<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+}
+
+export function fetchDefaultBoard(token: string): Promise<BoardData> {
+  return request<BoardData>("/boards/default", {
+    headers: { Authorization: `Bearer ${token}` },
   });
 }

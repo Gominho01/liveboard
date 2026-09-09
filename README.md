@@ -52,10 +52,21 @@ Each board is a Socket.io "room" (`board:<id>`). Emitted events: `card:create`, 
 
 ## 5. Suggested roadmap
 
-1. **Phase 0** — setup: Vite + Express scaffolds, local Postgres via Docker, Prisma schema (Board, Column, Card, User).
-2. **Phase 1** — MVP: card CRUD + socket broadcast + synchronized drag-and-drop + online presence.
-3. **Phase 2** — real deploy: frontend on Vercel, backend on Railway/Render, managed Postgres (Neon/Supabase).
-4. **Phase 3 (stretch)** — multiple boards, invite links, comments, live cursors.
+1. **Phase 0** — setup: Vite + Express scaffolds, local Postgres via Docker, Prisma schema (Board, Column, Card, User). ✅ done
+2. **Phase 1** — MVP: card CRUD + socket broadcast + synchronized drag-and-drop + online presence + activity feed. ✅ done
+3. **Phase 2 — multiple boards**
+   - Each user creates their own boards and invites collaborators via a token-based invite link.
+   - Board switcher (sidebar/list of boards the user belongs to).
+4. **Phase 3 — richer collaboration**
+   - Real-time comments per card (simple thread).
+   - Live cursors from other connected users (Figma-style) — cosmetic, but a strong WebSockets showcase.
+   - Colored labels/tags and due dates on cards, with an overdue highlight.
+5. **Phase 4 — usability**
+   - Search/filter cards on the board.
+   - DiceBear avatars (same UX as freeroom) instead of initials in the presence list.
+   - Keyboard shortcuts, light/dark theme.
+6. **Phase 5 — deploy**
+   - Frontend on Vercel, backend on Railway/Render (needs a persistent process for Socket.io), managed Postgres (Neon/Supabase).
 
 ## 6. Project structure (phase 0 — scaffold only, no logic)
 

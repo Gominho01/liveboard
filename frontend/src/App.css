@@ -121,6 +121,83 @@ button {
   text-align: center;
 }
 
+.board-error-page {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px;
+}
+
+.board-back-button {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+/* Board list */
+
+.board-list-page {
+  margin: 0 auto;
+  max-width: 640px;
+  padding: 0 24px;
+}
+
+.board-empty {
+  color: var(--text);
+  padding: 24px 0;
+}
+
+.board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 24px 0;
+  padding: 0;
+}
+
+.board-list-item {
+  align-items: center;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  font-size: 15px;
+  justify-content: space-between;
+  padding: 14px 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.board-list-item:hover {
+  border-color: var(--accent-border);
+}
+
+.board-role-badge {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 2px 10px;
+}
+
+.board-create-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.board-create-form input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  flex: 1;
+  font: inherit;
+  padding: 8px 10px;
+}
+
 .board-layout {
   display: flex;
   flex: 1;

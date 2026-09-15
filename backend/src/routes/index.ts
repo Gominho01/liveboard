@@ -1,6 +1,13 @@
 import { Router } from "express";
 import { login, register } from "../controllers/auth.controller.js";
-import { getDefaultBoardHandler } from "../controllers/board.controller.js";
+import {
+  acceptInviteHandler,
+  createBoardHandler,
+  getBoardHandler,
+  getInviteHandler,
+  listBoardsHandler,
+  regenerateInviteHandler,
+} from "../controllers/board.controller.js";
 import { authenticate } from "../middlewares/auth.js";
 
 export const router = Router();
@@ -12,4 +19,9 @@ router.get("/health", (_req, res) => {
 router.post("/auth/register", register);
 router.post("/auth/login", login);
 
-router.get("/boards/default", authenticate, getDefaultBoardHandler);
+router.get("/boards", authenticate, listBoardsHandler);
+router.post("/boards", authenticate, createBoardHandler);
+router.get("/boards/:id", authenticate, getBoardHandler);
+router.get("/boards/:id/invite", authenticate, getInviteHandler);
+router.post("/boards/:id/invite/regenerate", authenticate, regenerateInviteHandler);
+router.post("/invites/:token/accept", authenticate, acceptInviteHandler);

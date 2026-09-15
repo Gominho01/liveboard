@@ -15,18 +15,36 @@ model User {
   createdAt DateTime @default(now())
 
   boards        Board[]         @relation("BoardOwner")
+  boardMembers  BoardMember[]
   activityLogs  ActivityLog[]
 }
 
 model Board {
-  id        String   @id @default(cuid())
-  name      String
-  ownerId   String
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  ownerId     String
+  // Sharing a board is just sharing this token as a link (/invite/:token) —
+  // regenerating it invalidates whatever link was shared before.
+  inviteToken String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
 
   owner         User          @relation("BoardOwner", fields: [ownerId], references: [id])
+  members       BoardMember[]
   columns       Column[]
   activityLogs  ActivityLog[]
+}
+
+model BoardMember {
+  id       String   @id @default(cuid())
+  boardId  String
+  userId   String
+  role     String   @default("MEMBER") // "OWNER" | "MEMBER"
+  joinedAt DateTime @default(now())
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([boardId, userId])
 }
 
 model Column {

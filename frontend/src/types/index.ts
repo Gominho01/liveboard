@@ -35,6 +35,13 @@ export interface BoardData {
   columns: ColumnItem[];
 }
 
+export interface BoardSummary {
+  id: string;
+  name: string;
+  role: "OWNER" | "MEMBER";
+  createdAt: string;
+}
+
 export interface PresenceUser {
   id: string;
   name: string;

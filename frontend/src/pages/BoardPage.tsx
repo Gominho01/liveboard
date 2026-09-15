@@ -4,15 +4,21 @@ import { useEffect, useState } from "react";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { BoardColumn } from "../components/BoardColumn";
 import { CardModal } from "../components/CardModal";
+import { InviteModal } from "../components/InviteModal";
 import { PresenceList } from "../components/PresenceList";
 import { useBoardSocket } from "../hooks/useBoardSocket";
-import { fetchDefaultBoard } from "../services/api";
+import { fetchBoard } from "../services/api";
 import { emitCardCreate, emitCardDelete, emitCardMove, emitCardUpdate } from "../services/socket";
 import { useAuthStore } from "../store/auth";
 import { useBoardStore } from "../store/board";
 import type { CardItem } from "../types";
 
-export function BoardPage() {
+interface BoardPageProps {
+  boardId: string;
+  onBack: () => void;
+}
+
+export function BoardPage({ boardId, onBack }: BoardPageProps) {
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -27,18 +33,19 @@ export function BoardPage() {
 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modalState, setModalState] = useState<{ columnId: string; card?: CardItem } | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   useEffect(() => {
     if (!token) return;
-    fetchDefaultBoard(token)
+    fetchBoard(token, boardId)
       .then(setBoard)
       .catch((err) => setLoadError(err instanceof Error ? err.message : "Failed to load board"));
 
     return () => reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, boardId]);
 
   useBoardSocket(token, board?.id ?? null);
 
@@ -95,7 +102,14 @@ export function BoardPage() {
   }
 
   if (loadError) {
-    return <p className="board-error">{loadError}</p>;
+    return (
+      <div className="board-error-page">
+        <p className="board-error">{loadError}</p>
+        <button type="button" className="link-button" onClick={onBack}>
+          ← Back to your boards
+        </button>
+      </div>
+    );
   }
 
   if (!board) {
@@ -106,11 +120,17 @@ export function BoardPage() {
     <div className="board-page">
       <header className="board-header">
         <div>
+          <button type="button" className="link-button board-back-button" onClick={onBack}>
+            ← Boards
+          </button>
           <h1>{board.name}</h1>
           {user && <p className="board-subtitle">Signed in as {user.name}</p>}
         </div>
         <div className="board-header-right">
           <PresenceList users={presence} />
+          <button type="button" className="link-button" onClick={() => setShowInvite(true)}>
+            Invite
+          </button>
           <button type="button" className="link-button" onClick={logout}>
             Log out
           </button>
@@ -142,6 +162,8 @@ export function BoardPage() {
           onClose={() => setModalState(null)}
         />
       )}
+
+      {showInvite && <InviteModal boardId={board.id} onClose={() => setShowInvite(false)} />}
     </div>
   );
 }

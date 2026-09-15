@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import type { Server, Socket } from "socket.io";
 import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
+import { isBoardMember } from "../services/board.service.js";
 import {
   boardJoinSchema,
   cardCreateSchema,
@@ -51,6 +52,12 @@ function removePresence(boardId: string, socketId: string): void {
   }
 }
 
+// `board:join` already checked membership in the DB — reuse that instead of
+// a fresh query on every single card mutation.
+function hasJoined(socket: Socket, boardId: string): boolean {
+  return socketBoards.get(socket.id)?.has(boardId) ?? false;
+}
+
 async function logActivity(boardId: string, user: SocketUser, message: string) {
   return prisma.activityLog.create({
     data: { boardId, userId: user.id, message },
@@ -85,6 +92,11 @@ export function registerSocketHandlers(io: Server): void {
       }
       const boardId = parsed.data;
 
+      if (!(await isBoardMember(user.id, boardId))) {
+        socket.emit("error", { message: "You don't have access to this board" });
+        return;
+      }
+
       socket.join(boardRoom(boardId));
       addPresence(boardId, socket, user);
 
@@ -111,6 +123,11 @@ export function registerSocketHandlers(io: Server): void {
         return;
       }
       const { boardId, columnId, title, description } = parsed.data;
+
+      if (!hasJoined(socket, boardId)) {
+        socket.emit("error", { message: "Join the board before editing it" });
+        return;
+      }
 
       try {
         const column = await prisma.column.findUnique({ where: { id: columnId } });
@@ -146,6 +163,11 @@ export function registerSocketHandlers(io: Server): void {
       }
       const { boardId, cardId, columnId, order } = parsed.data;
 
+      if (!hasJoined(socket, boardId)) {
+        socket.emit("error", { message: "Join the board before editing it" });
+        return;
+      }
+
       try {
         const column = await prisma.column.findUnique({ where: { id: columnId } });
         if (!column || column.boardId !== boardId) {
@@ -176,6 +198,11 @@ export function registerSocketHandlers(io: Server): void {
       }
       const { boardId, cardId, title, description } = parsed.data;
 
+      if (!hasJoined(socket, boardId)) {
+        socket.emit("error", { message: "Join the board before editing it" });
+        return;
+      }
+
       try {
         const card = await prisma.card.update({
           where: { id: cardId },
@@ -202,6 +229,11 @@ export function registerSocketHandlers(io: Server): void {
         return;
       }
       const { boardId, cardId } = parsed.data;
+
+      if (!hasJoined(socket, boardId)) {
+        socket.emit("error", { message: "Join the board before editing it" });
+        return;
+      }
 
       try {
         const card = await prisma.card.delete({ where: { id: cardId } });

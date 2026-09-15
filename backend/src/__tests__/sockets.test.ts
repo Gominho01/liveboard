@@ -19,8 +19,16 @@ vi.mock("../config/prisma.js", () => ({
     activityLog: { create: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
+// Membership is checked (via board.service) before a socket may join a board
+// room or mutate its cards. Every board in this suite is treated as one the
+// connecting user already belongs to — the access-control behavior itself is
+// covered separately in board.service.test.ts.
+vi.mock("../services/board.service.js", () => ({
+  isBoardMember: vi.fn().mockResolvedValue(true),
+}));
 
 const { prisma } = await import("../config/prisma.js");
+const { isBoardMember } = await import("../services/board.service.js");
 const { registerSocketHandlers } = await import("../sockets/index.js");
 
 let httpServer: ReturnType<typeof createServer>;
@@ -73,6 +81,32 @@ describe("socket authentication", () => {
     const socket = await connectClient(makeToken("u1", "Alice"));
     expect(socket.connected).toBe(true);
     socket.close();
+  });
+});
+
+describe("board access control", () => {
+  it("rejects board:join for a board the user isn't a member of", async () => {
+    vi.mocked(isBoardMember).mockResolvedValueOnce(false);
+
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    const errorEvent = waitFor<{ message: string }>(alice, "error");
+    alice.emit("board:join", "someone-elses-board");
+
+    await expect(errorEvent).resolves.toEqual({ message: "You don't have access to this board" });
+
+    alice.close();
+  });
+
+  it("rejects card:create from a socket that hasn't joined the board", async () => {
+    const alice = await connectClient(makeToken("u1", "Alice"));
+
+    const errorEvent = waitFor<{ message: string }>(alice, "error");
+    alice.emit("card:create", { boardId: "board-never-joined", columnId: "col-1", title: "Sneaky" });
+
+    await expect(errorEvent).resolves.toEqual({ message: "Join the board before editing it" });
+    expect(prisma.card.create).not.toHaveBeenCalled();
+
+    alice.close();
   });
 });
 

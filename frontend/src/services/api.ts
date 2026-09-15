@@ -1,4 +1,4 @@
-import type { AuthResponse, BoardData } from "../types";
+import type { AuthResponse, BoardData, BoardSummary } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3333";
 
@@ -30,8 +30,42 @@ export function loginRequest(email: string, password: string): Promise<AuthRespo
   });
 }
 
-export function fetchDefaultBoard(token: string): Promise<BoardData> {
-  return request<BoardData>("/boards/default", {
+export function listBoards(token: string): Promise<BoardSummary[]> {
+  return request<BoardSummary[]>("/boards", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function createBoard(token: string, name: string): Promise<BoardData> {
+  return request<BoardData>("/boards", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function fetchBoard(token: string, boardId: string): Promise<BoardData> {
+  return request<BoardData>(`/boards/${boardId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function getInviteLink(token: string, boardId: string): Promise<{ token: string }> {
+  return request<{ token: string }>(`/boards/${boardId}/invite`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function regenerateInviteLink(token: string, boardId: string): Promise<{ token: string }> {
+  return request<{ token: string }>(`/boards/${boardId}/invite/regenerate`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function acceptInvite(token: string, inviteToken: string): Promise<BoardData> {
+  return request<BoardData>(`/invites/${inviteToken}/accept`, {
+    method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
 }

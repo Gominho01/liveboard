@@ -158,6 +158,12 @@ button {
   padding: 0;
 }
 
+.board-list-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
 .board-list-item {
   align-items: center;
   background: var(--code-bg);
@@ -165,15 +171,38 @@ button {
   border-radius: 8px;
   cursor: pointer;
   display: flex;
+  flex: 1;
   font-size: 15px;
   justify-content: space-between;
   padding: 14px 16px;
   text-align: left;
-  width: 100%;
 }
 
 .board-list-item:hover {
   border-color: var(--accent-border);
+}
+
+.board-row-action {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 13px;
+  padding: 8px 14px;
+  text-align: center;
+  width: 84px;
+}
+
+.board-row-action:hover:not(:disabled) {
+  border-color: #d64545;
+  color: #d64545;
+}
+
+.board-row-action:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .board-role-badge {

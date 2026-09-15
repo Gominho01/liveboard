@@ -112,6 +112,36 @@ export async function regenerateInviteToken(userId: string, boardId: string): Pr
   return board.inviteToken;
 }
 
+/** A member (not the owner) can leave a board they no longer want to see —
+ * their membership row is removed, the board and its data are untouched.
+ * The owner can't leave their own board this way (there's no one to hand
+ * it off to yet), so they get a clear error instead of a silent no-op. */
+export async function leaveBoard(userId: string, boardId: string): Promise<void> {
+  const board = await prisma.board.findUnique({ where: { id: boardId } });
+  if (!board) {
+    throw new AppError(404, "Board not found");
+  }
+  if (board.ownerId === userId) {
+    throw new AppError(400, "The board owner can't leave — delete the board instead");
+  }
+
+  const membership = await prisma.boardMember.findUnique({
+    where: { boardId_userId: { boardId, userId } },
+  });
+  if (!membership) {
+    throw new AppError(404, "Board not found");
+  }
+
+  await prisma.boardMember.delete({ where: { boardId_userId: { boardId, userId } } });
+}
+
+/** The owner can delete a board outright, even with other members in it —
+ * cascades to its members, columns, cards, and activity log. */
+export async function deleteBoard(userId: string, boardId: string): Promise<void> {
+  await requireOwner(userId, boardId);
+  await prisma.board.delete({ where: { id: boardId } });
+}
+
 /** Joining via an invite link is idempotent — visiting a link you already
  * used (or your own board's link) just takes you to the board. */
 export async function acceptInvite(userId: string, token: string) {

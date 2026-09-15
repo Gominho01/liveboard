@@ -13,6 +13,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(body.error ?? `Request failed with status ${res.status}`);
   }
 
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
   return res.json() as Promise<T>;
 }
 
@@ -66,6 +70,20 @@ export function regenerateInviteLink(token: string, boardId: string): Promise<{ 
 export function acceptInvite(token: string, inviteToken: string): Promise<BoardData> {
   return request<BoardData>(`/invites/${inviteToken}/accept`, {
     method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function leaveBoard(token: string, boardId: string): Promise<void> {
+  return request<void>(`/boards/${boardId}/leave`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function deleteBoard(token: string, boardId: string): Promise<void> {
+  return request<void>(`/boards/${boardId}`, {
+    method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
 }

@@ -3,8 +3,10 @@ import { z } from "zod";
 import {
   acceptInvite,
   createBoard,
+  deleteBoard,
   getBoardForUser,
   getInviteToken,
+  leaveBoard,
   listBoardsForUser,
   regenerateInviteToken,
 } from "../services/board.service.js";
@@ -69,6 +71,24 @@ export async function acceptInviteHandler(req: Request, res: Response): Promise<
   try {
     const board = await acceptInvite(req.user!.id, req.params.token as string);
     res.json(board);
+  } catch (err) {
+    handleError(err, res);
+  }
+}
+
+export async function leaveBoardHandler(req: Request, res: Response): Promise<void> {
+  try {
+    await leaveBoard(req.user!.id, req.params.id as string);
+    res.status(204).send();
+  } catch (err) {
+    handleError(err, res);
+  }
+}
+
+export async function deleteBoardHandler(req: Request, res: Response): Promise<void> {
+  try {
+    await deleteBoard(req.user!.id, req.params.id as string);
+    res.status(204).send();
   } catch (err) {
     handleError(err, res);
   }

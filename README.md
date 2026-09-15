@@ -1,6 +1,6 @@
 # 🗂️ LiveBoard — Real-Time Collaborative Kanban
 
-> Status: **phase 1 (MVP) implemented** — run `docker compose up -d && cd backend && npm run prisma:migrate` locally to try it.
+> Status: **phase 2 implemented** — run `docker compose up -d && cd backend && npm run prisma:migrate` locally to try it.
 
 ## 1. Overview
 
@@ -17,11 +17,15 @@ This project exists to prove, with public code, a skill that today only shows up
 3. **Online presence** — a list of avatars/names of whoever is currently on the board, updated as people join/leave.
 4. **Activity feed** — a side panel with a log like "Lucas moved 'Fix layout' to Done at 2:32pm", fed by the same socket events.
 
-### Phase 2 (stretch goal)
+### Phase 2
 
-1. **Multiple boards per user** — the owner creates boards and invites collaborators via an invite-token link.
-2. **Comments on cards** — a simple thread per card, also in real time.
-3. **Live cursors** — show other users' mouse position on the board (a "Figma-like" effect), purely cosmetic but a good teaching example for WebSockets.
+1. **Multiple boards per user** — create your own boards, switch between them, and invite collaborators via a token-based invite link (regenerating it revokes the old one). ✅ done
+2. **Leave/delete a board** — a member can leave a board they no longer want to see; the owner can delete a board outright, cascading to its members, columns, cards, and activity log. ✅ done
+
+### Phase 3 (stretch goal)
+
+1. **Comments on cards** — a simple thread per card, also in real time.
+2. **Live cursors** — show other users' mouse position on the board (a "Figma-like" effect), purely cosmetic but a good teaching example for WebSockets.
 
 ## 3. Stack
 
@@ -55,8 +59,9 @@ Each board is a Socket.io "room" (`board:<id>`). Emitted events: `card:create`, 
 1. **Phase 0** — setup: Vite + Express scaffolds, local Postgres via Docker, Prisma schema (Board, Column, Card, User). ✅ done
 2. **Phase 1** — MVP: card CRUD + socket broadcast + synchronized drag-and-drop + online presence + activity feed. ✅ done
 3. **Phase 2 — multiple boards**
-   - Each user creates their own boards and invites collaborators via a token-based invite link.
-   - Board switcher (sidebar/list of boards the user belongs to).
+   - Each user creates their own boards and invites collaborators via a token-based invite link. ✅ done
+   - Board switcher (sidebar/list of boards the user belongs to). ✅ done
+   - Leave a board (member) or delete it outright (owner). ✅ done
 4. **Phase 3 — richer collaboration**
    - Real-time comments per card (simple thread).
    - Live cursors from other connected users (Figma-style) — cosmetic, but a strong WebSockets showcase.
@@ -96,5 +101,4 @@ cd frontend && npm run dev    # Vite at http://localhost:5173
 ## 7. Open decisions
 
 - Final project name.
-- Invite-based auth (URL token) or does a user need an account before joining a board?
 - Is it worth persisting the activity history permanently, or just keeping it in memory while the board is active?

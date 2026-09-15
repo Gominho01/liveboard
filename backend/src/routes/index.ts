@@ -3,8 +3,10 @@ import { login, register } from "../controllers/auth.controller.js";
 import {
   acceptInviteHandler,
   createBoardHandler,
+  deleteBoardHandler,
   getBoardHandler,
   getInviteHandler,
+  leaveBoardHandler,
   listBoardsHandler,
   regenerateInviteHandler,
 } from "../controllers/board.controller.js";
@@ -25,3 +27,5 @@ router.get("/boards/:id", authenticate, getBoardHandler);
 router.get("/boards/:id/invite", authenticate, getInviteHandler);
 router.post("/boards/:id/invite/regenerate", authenticate, regenerateInviteHandler);
 router.post("/invites/:token/accept", authenticate, acceptInviteHandler);
+router.post("/boards/:id/leave", authenticate, leaveBoardHandler);
+router.delete("/boards/:id", authenticate, deleteBoardHandler);

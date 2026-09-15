@@ -6,11 +6,13 @@ vi.mock("../config/prisma.js", () => ({
       create: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     },
     boardMember: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       upsert: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
@@ -19,9 +21,11 @@ const { prisma } = await import("../config/prisma.js");
 const {
   acceptInvite,
   createBoard,
+  deleteBoard,
   getBoardForUser,
   getInviteToken,
   isBoardMember,
+  leaveBoard,
   listBoardsForUser,
   regenerateInviteToken,
 } = await import("../services/board.service.js");
@@ -178,6 +182,86 @@ describe("board service", () => {
       await expect(promise).rejects.toBeInstanceOf(AppError);
       await expect(promise).rejects.toMatchObject({ status: 404 });
       expect(prisma.boardMember.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("leaveBoard", () => {
+    it("removes the membership row for a non-owner member", async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(prisma.board.findUnique).mockResolvedValue({ id: "board-1", ownerId: "owner-1" } as any);
+      vi.mocked(prisma.boardMember.findUnique).mockResolvedValue({
+        id: "mem-1",
+        boardId: "board-1",
+        userId: "user-2",
+        role: "MEMBER",
+        joinedAt: new Date(),
+      });
+
+      await leaveBoard("user-2", "board-1");
+
+      expect(prisma.boardMember.delete).toHaveBeenCalledWith({
+        where: { boardId_userId: { boardId: "board-1", userId: "user-2" } },
+      });
+    });
+
+    it("rejects the owner trying to leave their own board", async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(prisma.board.findUnique).mockResolvedValue({ id: "board-1", ownerId: "user-1" } as any);
+
+      const promise = leaveBoard("user-1", "board-1");
+      await expect(promise).rejects.toBeInstanceOf(AppError);
+      await expect(promise).rejects.toMatchObject({ status: 400 });
+      expect(prisma.boardMember.delete).not.toHaveBeenCalled();
+    });
+
+    it("throws a 404 for a board that doesn't exist", async () => {
+      vi.mocked(prisma.board.findUnique).mockResolvedValue(null);
+
+      const promise = leaveBoard("user-2", "board-1");
+      await expect(promise).rejects.toBeInstanceOf(AppError);
+      await expect(promise).rejects.toMatchObject({ status: 404 });
+      expect(prisma.boardMember.delete).not.toHaveBeenCalled();
+    });
+
+    it("throws a 404 for a user who isn't a member", async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(prisma.board.findUnique).mockResolvedValue({ id: "board-1", ownerId: "owner-1" } as any);
+      vi.mocked(prisma.boardMember.findUnique).mockResolvedValue(null);
+
+      const promise = leaveBoard("user-2", "board-1");
+      await expect(promise).rejects.toBeInstanceOf(AppError);
+      await expect(promise).rejects.toMatchObject({ status: 404 });
+      expect(prisma.boardMember.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteBoard", () => {
+    it("deletes the board for its owner, even with other members in it", async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(prisma.board.findUnique).mockResolvedValue({ id: "board-1", ownerId: "user-1" } as any);
+
+      await deleteBoard("user-1", "board-1");
+
+      expect(prisma.board.delete).toHaveBeenCalledWith({ where: { id: "board-1" } });
+    });
+
+    it("rejects a non-owner", async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vi.mocked(prisma.board.findUnique).mockResolvedValue({ id: "board-1", ownerId: "owner-1" } as any);
+
+      const promise = deleteBoard("user-2", "board-1");
+      await expect(promise).rejects.toBeInstanceOf(AppError);
+      await expect(promise).rejects.toMatchObject({ status: 403 });
+      expect(prisma.board.delete).not.toHaveBeenCalled();
+    });
+
+    it("throws a 404 for a board that doesn't exist", async () => {
+      vi.mocked(prisma.board.findUnique).mockResolvedValue(null);
+
+      const promise = deleteBoard("user-1", "board-1");
+      await expect(promise).rejects.toBeInstanceOf(AppError);
+      await expect(promise).rejects.toMatchObject({ status: 404 });
+      expect(prisma.board.delete).not.toHaveBeenCalled();
     });
   });
 });

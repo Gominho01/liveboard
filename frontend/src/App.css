@@ -18,9 +18,9 @@ button {
 
 .danger-button {
   background: none;
-  border: 1px solid #d64545;
+  border: 1px solid var(--danger);
   border-radius: 6px;
-  color: #d64545;
+  color: var(--danger);
   cursor: pointer;
   padding: 6px 12px;
 }
@@ -76,7 +76,7 @@ button {
 }
 
 .auth-error {
-  color: #d64545;
+  color: var(--danger);
   font-size: 14px;
   margin: 0;
 }
@@ -198,8 +198,8 @@ button {
 }
 
 .board-row-action:hover:not(:disabled) {
-  border-color: #d64545;
-  color: #d64545;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .board-row-action:disabled {
@@ -254,7 +254,7 @@ button {
 }
 
 .board-column-over {
-  outline: 2px dashed var(--accent-border);
+  outline: 2px dashed var(--text);
 }
 
 .board-column-header {
@@ -314,15 +314,14 @@ button {
 
 .presence-list {
   display: flex;
-  gap: -4px;
 }
 
 .presence-avatar {
   align-items: center;
-  background: var(--accent);
+  background: var(--border);
   border: 2px solid var(--bg);
   border-radius: 50%;
-  color: white;
+  color: var(--text-h);
   display: flex;
   font-size: 12px;
   font-weight: 600;
@@ -442,4 +441,41 @@ button {
   color: white;
   cursor: pointer;
   padding: 8px 16px;
+}
+
+/* Connection status */
+
+.connection-status {
+  align-items: center;
+  color: var(--text);
+  display: flex;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.connection-dot {
+  background: #4caf6d;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.connection-status-offline .connection-dot {
+  background: var(--danger);
+}
+
+/* Socket error toast */
+
+.socket-toast {
+  background: var(--text-h);
+  border-radius: 8px;
+  bottom: 24px;
+  box-shadow: var(--shadow);
+  color: var(--bg);
+  font-size: 13px;
+  max-width: 320px;
+  padding: 10px 16px;
+  position: fixed;
+  right: 24px;
+  z-index: 100;
 }

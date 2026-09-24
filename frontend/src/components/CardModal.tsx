@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useDialogA11y } from "../hooks/useDialogA11y";
 import type { CardItem } from "../types";
 
 interface CardModalProps {
@@ -10,6 +11,7 @@ interface CardModalProps {
 }
 
 export function CardModal({ card, onSave, onDelete, onClose }: CardModalProps) {
+  const { ref, titleId } = useDialogA11y<HTMLFormElement>(onClose);
   const [title, setTitle] = useState(card?.title ?? "");
   const [description, setDescription] = useState(card?.description ?? "");
 
@@ -21,12 +23,21 @@ export function CardModal({ card, onSave, onDelete, onClose }: CardModalProps) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <form className="modal-content" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
-        <h2>{card ? "Edit card" : "New card"}</h2>
+      <form
+        ref={ref}
+        className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+      >
+        <h2 id={titleId}>{card ? "Edit card" : "New card"}</h2>
 
         <label>
           Title
-          <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus required />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} required />
         </label>
 
         <label>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { createBoard, deleteBoard, leaveBoard, listBoards } from "../services/api";
 import { useAuthStore } from "../store/auth";
 import type { BoardSummary } from "../types";
@@ -7,6 +8,8 @@ import type { BoardSummary } from "../types";
 interface BoardListPageProps {
   onSelect: (boardId: string) => void;
 }
+
+type ConfirmTarget = { board: BoardSummary; action: "leave" | "delete" };
 
 export function BoardListPage({ onSelect }: BoardListPageProps) {
   const token = useAuthStore((s) => s.token);
@@ -18,6 +21,7 @@ export function BoardListPage({ onSelect }: BoardListPageProps) {
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -42,10 +46,8 @@ export function BoardListPage({ onSelect }: BoardListPageProps) {
     }
   }
 
-  async function handleLeave(board: BoardSummary) {
+  async function performLeave(board: BoardSummary) {
     if (!token) return;
-    if (!window.confirm(`Leave "${board.name}"? You'll need a new invite link to rejoin.`)) return;
-
     setBusyId(board.id);
     setError(null);
     try {
@@ -58,16 +60,8 @@ export function BoardListPage({ onSelect }: BoardListPageProps) {
     }
   }
 
-  async function handleDelete(board: BoardSummary) {
+  async function performDelete(board: BoardSummary) {
     if (!token) return;
-    if (
-      !window.confirm(
-        `Delete "${board.name}"? This permanently removes the board, its cards, and everyone's access to it.`,
-      )
-    ) {
-      return;
-    }
-
     setBusyId(board.id);
     setError(null);
     try {
@@ -78,6 +72,14 @@ export function BoardListPage({ onSelect }: BoardListPageProps) {
     } finally {
       setBusyId(null);
     }
+  }
+
+  function handleConfirm() {
+    if (!confirmTarget) return;
+    const { board, action } = confirmTarget;
+    setConfirmTarget(null);
+    if (action === "leave") performLeave(board);
+    else performDelete(board);
   }
 
   return (
@@ -110,7 +112,7 @@ export function BoardListPage({ onSelect }: BoardListPageProps) {
                 <button
                   type="button"
                   className="board-row-action"
-                  onClick={() => handleLeave(board)}
+                  onClick={() => setConfirmTarget({ board, action: "leave" })}
                   disabled={busyId === board.id}
                   aria-label={`Leave ${board.name}`}
                   title="Leave board"
@@ -121,7 +123,7 @@ export function BoardListPage({ onSelect }: BoardListPageProps) {
                 <button
                   type="button"
                   className="board-row-action"
-                  onClick={() => handleDelete(board)}
+                  onClick={() => setConfirmTarget({ board, action: "delete" })}
                   disabled={busyId === board.id}
                   aria-label={`Delete ${board.name}`}
                   title="Delete board"
@@ -146,6 +148,20 @@ export function BoardListPage({ onSelect }: BoardListPageProps) {
           {creating ? "Creating…" : "Create board"}
         </button>
       </form>
+
+      {confirmTarget && (
+        <ConfirmDialog
+          title={confirmTarget.action === "leave" ? "Leave board" : "Delete board"}
+          message={
+            confirmTarget.action === "leave"
+              ? `Leave "${confirmTarget.board.name}"? You'll need a new invite link to rejoin.`
+              : `Delete "${confirmTarget.board.name}"? This permanently removes the board, its cards, and everyone's access to it.`
+          }
+          confirmLabel={confirmTarget.action === "leave" ? "Leave" : "Delete"}
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirmTarget(null)}
+        />
+      )}
     </div>
   );
 }

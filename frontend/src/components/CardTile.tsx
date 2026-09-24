@@ -1,5 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { KeyboardEvent } from "react";
 import type { CardItem } from "../types";
 
 interface CardTileProps {
@@ -19,6 +20,17 @@ export function CardTile({ card, onEdit }: CardTileProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Space is reserved for the keyboard drag sensor (pick up/drop); Enter is
+  // free to open the edit modal instead, since dnd-kit's own listener would
+  // otherwise treat Enter as a second "pick up" key too.
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    listeners?.onKeyDown?.(event);
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onEdit(card);
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -26,6 +38,7 @@ export function CardTile({ card, onEdit }: CardTileProps) {
       className="card-tile"
       {...attributes}
       {...listeners}
+      onKeyDown={handleKeyDown}
       onClick={() => onEdit(card)}
     >
       <p className="card-title">{card.title}</p>

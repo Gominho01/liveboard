@@ -1,9 +1,11 @@
-import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useEffect, useState } from "react";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { BoardColumn } from "../components/BoardColumn";
 import { CardModal } from "../components/CardModal";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceList } from "../components/PresenceList";
 import { useBoardSocket } from "../hooks/useBoardSocket";
@@ -33,9 +35,19 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modalState, setModalState] = useState<{ columnId: string; card?: CardItem } | null>(null);
+  const [confirmDeleteCard, setConfirmDeleteCard] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [socketErrorMessage, setSocketErrorMessage] = useState<string | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    // Enter is left free for opening the edit modal (see CardTile), so only
+    // Space picks a card up and drops it — arrow keys move it once held.
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space"] },
+    }),
+  );
 
   useEffect(() => {
     if (!token) return;
@@ -47,7 +59,14 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, boardId]);
 
-  useBoardSocket(token, board?.id ?? null);
+  const { connected, lastError } = useBoardSocket(token, board?.id ?? null);
+
+  useEffect(() => {
+    if (!lastError) return;
+    setSocketErrorMessage(lastError.message);
+    const timer = setTimeout(() => setSocketErrorMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [lastError]);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -99,6 +118,7 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
     applyCardDelete({ id: card.id, columnId: card.columnId });
     emitCardDelete({ boardId: board.id, cardId: card.id });
     setModalState(null);
+    setConfirmDeleteCard(false);
   }
 
   if (loadError) {
@@ -127,6 +147,10 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
           {user && <p className="board-subtitle">Signed in as {user.name}</p>}
         </div>
         <div className="board-header-right">
+          <span className={`connection-status${connected ? "" : " connection-status-offline"}`}>
+            <span aria-hidden="true" className="connection-dot" />
+            {connected ? "Live" : "Offline"}
+          </span>
           <PresenceList users={presence} />
           <button type="button" className="link-button" onClick={() => setShowInvite(true)}>
             Invite
@@ -158,12 +182,28 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
         <CardModal
           card={modalState.card}
           onSave={handleSaveCard}
-          onDelete={modalState.card ? handleDeleteCard : undefined}
+          onDelete={modalState.card ? () => setConfirmDeleteCard(true) : undefined}
           onClose={() => setModalState(null)}
         />
       )}
 
+      {confirmDeleteCard && modalState?.card && (
+        <ConfirmDialog
+          title="Delete card"
+          message={`Delete "${modalState.card.title}"? This can't be undone.`}
+          confirmLabel="Delete"
+          onConfirm={handleDeleteCard}
+          onCancel={() => setConfirmDeleteCard(false)}
+        />
+      )}
+
       {showInvite && <InviteModal boardId={board.id} onClose={() => setShowInvite(false)} />}
+
+      {socketErrorMessage && (
+        <div className="socket-toast" role="status">
+          {socketErrorMessage}
+        </div>
+      )}
     </div>
   );
 }

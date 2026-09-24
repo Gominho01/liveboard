@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDialogA11y } from "../hooks/useDialogA11y";
 import { getInviteLink, regenerateInviteLink } from "../services/api";
 import { useAuthStore } from "../store/auth";
 
@@ -10,6 +11,7 @@ interface InviteModalProps {
 type Status = "loading" | "ready" | "forbidden" | "error";
 
 export function InviteModal({ boardId, onClose }: InviteModalProps) {
+  const { ref, titleId } = useDialogA11y<HTMLDivElement>(onClose);
   const authToken = useAuthStore((s) => s.token);
   const [status, setStatus] = useState<Status>("loading");
   const [inviteToken, setInviteToken] = useState<string | null>(null);
@@ -54,8 +56,16 @@ export function InviteModal({ boardId, onClose }: InviteModalProps) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h2>Invite to this board</h2>
+      <div
+        ref={ref}
+        className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id={titleId}>Invite to this board</h2>
 
         {status === "loading" && <p>Loading…</p>}
         {status === "forbidden" && <p>Only the board owner can share an invite link.</p>}

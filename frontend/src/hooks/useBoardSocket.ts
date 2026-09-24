@@ -1,11 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { connectSocket, disconnectSocket, joinBoard } from "../services/socket";
 import { useBoardStore } from "../store/board";
 import type { ActivityEntry, CardDeleteEvent, CardItem, PresenceUser } from "../types";
 
+interface SocketError {
+  message: string;
+  id: number;
+}
+
+interface BoardSocketStatus {
+  connected: boolean;
+  lastError: SocketError | null;
+}
+
 /** Connects to the socket server, joins the given board room, and wires
  * every real-time event into the board store. Cleans up on unmount. */
-export function useBoardSocket(token: string | null, boardId: string | null): void {
+export function useBoardSocket(token: string | null, boardId: string | null): BoardSocketStatus {
   const applyCardUpsert = useBoardStore((s) => s.applyCardUpsert);
   const applyCardDelete = useBoardStore((s) => s.applyCardDelete);
   const setPresence = useBoardStore((s) => s.setPresence);
@@ -13,6 +23,9 @@ export function useBoardSocket(token: string | null, boardId: string | null): vo
   const removePresence = useBoardStore((s) => s.removePresence);
   const setActivity = useBoardStore((s) => s.setActivity);
   const addActivity = useBoardStore((s) => s.addActivity);
+
+  const [connected, setConnected] = useState(false);
+  const [lastError, setLastError] = useState<SocketError | null>(null);
 
   useEffect(() => {
     if (!token || !boardId) return;
@@ -26,7 +39,15 @@ export function useBoardSocket(token: string | null, boardId: string | null): vo
     const onCardDelete = (payload: CardDeleteEvent) => applyCardDelete(payload);
     const onActivityList = (entries: ActivityEntry[]) => setActivity(entries);
     const onActivity = (entry: ActivityEntry) => addActivity(entry);
-    const onSocketError = (payload: { message: string }) => console.warn("[socket]", payload.message);
+    const onSocketError = (payload: { message: string }) => {
+      console.warn("[socket]", payload.message);
+      setLastError({ message: payload.message, id: Date.now() });
+    };
+    const onConnect = () => {
+      setConnected(true);
+      joinBoard(boardId);
+    };
+    const onDisconnect = () => setConnected(false);
 
     socket.on("presence:list", onPresenceList);
     socket.on("presence:join", onPresenceJoin);
@@ -38,9 +59,10 @@ export function useBoardSocket(token: string | null, boardId: string | null): vo
     socket.on("activity:list", onActivityList);
     socket.on("activity:new", onActivity);
     socket.on("error", onSocketError);
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
 
-    socket.on("connect", () => joinBoard(boardId));
-    if (socket.connected) joinBoard(boardId);
+    if (socket.connected) onConnect();
 
     return () => {
       socket.off("presence:list", onPresenceList);
@@ -53,7 +75,10 @@ export function useBoardSocket(token: string | null, boardId: string | null): vo
       socket.off("activity:list", onActivityList);
       socket.off("activity:new", onActivity);
       socket.off("error", onSocketError);
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
       disconnectSocket();
+      setConnected(false);
     };
   }, [
     token,
@@ -66,4 +91,6 @@ export function useBoardSocket(token: string | null, boardId: string | null): vo
     setActivity,
     addActivity,
   ]);
+
+  return { connected, lastError };
 }

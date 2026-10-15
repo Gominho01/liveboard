@@ -4,7 +4,7 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useEffect, useState } from "react";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { BoardColumn } from "../components/BoardColumn";
-import { CardModal } from "../components/CardModal";
+import { CardModal, type CardSaveData } from "../components/CardModal";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceList } from "../components/PresenceList";
@@ -97,17 +97,26 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
     emitCardMove({ boardId: board.id, cardId: activeCard.id, columnId: targetColumnId, order: targetIndex });
   }
 
-  function handleSaveCard(title: string, description: string) {
+  function handleSaveCard({ title, description, dueDate, labelColor }: CardSaveData) {
     if (!board || !modalState) return;
 
     if (modalState.card) {
-      const updated: CardItem = { ...modalState.card, title, description: description || null };
+      const updated: CardItem = {
+        ...modalState.card,
+        title,
+        description: description || null,
+        dueDate,
+        labelColor,
+      };
       applyCardUpsert(updated);
-      emitCardUpdate({ boardId: board.id, cardId: modalState.card.id, title, description });
+      emitCardUpdate({ boardId: board.id, cardId: modalState.card.id, title, description, dueDate, labelColor });
     } else {
-      emitCardCreate({ boardId: board.id, columnId: modalState.columnId, title, description }, (card) => {
-        applyCardUpsert(card);
-      });
+      emitCardCreate(
+        { boardId: board.id, columnId: modalState.columnId, title, description, dueDate, labelColor },
+        (card) => {
+          applyCardUpsert(card);
+        },
+      );
     }
     setModalState(null);
   }

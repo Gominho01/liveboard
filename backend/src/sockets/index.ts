@@ -124,7 +124,7 @@ export function registerSocketHandlers(io: Server): void {
         socket.emit("error", { message: "Invalid card:create payload" });
         return;
       }
-      const { boardId, columnId, title, description } = parsed.data;
+      const { boardId, columnId, title, description, dueDate, labelColor } = parsed.data;
 
       if (!hasJoined(socket, boardId)) {
         socket.emit("error", { message: "Join the board before editing it" });
@@ -140,7 +140,14 @@ export function registerSocketHandlers(io: Server): void {
 
         const order = await prisma.card.count({ where: { columnId } });
         const card = await prisma.card.create({
-          data: { columnId, title, description, order },
+          data: {
+            columnId,
+            title,
+            description,
+            order,
+            dueDate: dueDate ? new Date(dueDate) : dueDate,
+            labelColor,
+          },
         });
 
         // The sender gets the persisted card via the ack callback (it has no
@@ -198,7 +205,7 @@ export function registerSocketHandlers(io: Server): void {
         socket.emit("error", { message: "Invalid card:update payload" });
         return;
       }
-      const { boardId, cardId, title, description } = parsed.data;
+      const { boardId, cardId, title, description, dueDate, labelColor } = parsed.data;
 
       if (!hasJoined(socket, boardId)) {
         socket.emit("error", { message: "Join the board before editing it" });
@@ -211,6 +218,8 @@ export function registerSocketHandlers(io: Server): void {
           data: {
             ...(title !== undefined ? { title } : {}),
             ...(description !== undefined ? { description } : {}),
+            ...(dueDate !== undefined ? { dueDate: dueDate ? new Date(dueDate) : dueDate } : {}),
+            ...(labelColor !== undefined ? { labelColor } : {}),
           },
         });
 

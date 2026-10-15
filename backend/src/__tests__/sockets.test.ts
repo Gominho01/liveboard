@@ -378,6 +378,44 @@ describe("card:move", () => {
   });
 });
 
+describe("cursor:move", () => {
+  it("broadcasts the position to other clients only, with no persistence", async () => {
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    const bob = await connectClient(makeToken("u2", "Bob"));
+
+    alice.emit("board:join", "board-15");
+    await waitFor(alice, "presence:list");
+    bob.emit("board:join", "board-15");
+    await waitFor(bob, "presence:list");
+
+    const bobCursorMove = waitFor<{ userId: string; name: string; x: number; y: number }>(bob, "cursor:move");
+    let aliceReceivedBroadcast = false;
+    alice.once("cursor:move", () => {
+      aliceReceivedBroadcast = true;
+    });
+
+    alice.emit("cursor:move", { boardId: "board-15", x: 0.5, y: 0.25 });
+
+    await expect(bobCursorMove).resolves.toEqual({ userId: "u1", name: "Alice", x: 0.5, y: 0.25 });
+    expect(aliceReceivedBroadcast).toBe(false);
+    expect(prisma.card.update).not.toHaveBeenCalled();
+
+    alice.close();
+    bob.close();
+  });
+
+  it("rejects cursor:move from a socket that hasn't joined the board", async () => {
+    const alice = await connectClient(makeToken("u1", "Alice"));
+
+    const errorEvent = waitFor<{ message: string }>(alice, "error");
+    alice.emit("cursor:move", { boardId: "board-never-joined", x: 0.1, y: 0.1 });
+
+    await expect(errorEvent).resolves.toEqual({ message: "Join the board before editing it" });
+
+    alice.close();
+  });
+});
+
 describe("card:update", () => {
   it("updates title/description and broadcasts to other clients only", async () => {
     vi.mocked(prisma.card.update).mockResolvedValue({

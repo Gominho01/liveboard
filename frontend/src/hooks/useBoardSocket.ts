@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { connectSocket, disconnectSocket, joinBoard } from "../services/socket";
 import { useBoardStore } from "../store/board";
-import type { ActivityEntry, CardDeleteEvent, CardItem, CommentItem, PresenceUser } from "../types";
+import type { ActivityEntry, CardDeleteEvent, CardItem, CommentItem, CursorPosition, PresenceUser } from "../types";
 
 interface SocketError {
   message: string;
@@ -24,6 +24,8 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
   const setActivity = useBoardStore((s) => s.setActivity);
   const addActivity = useBoardStore((s) => s.addActivity);
   const addComment = useBoardStore((s) => s.addComment);
+  const setCursor = useBoardStore((s) => s.setCursor);
+  const removeCursor = useBoardStore((s) => s.removeCursor);
 
   const [connected, setConnected] = useState(false);
   const [lastError, setLastError] = useState<SocketError | null>(null);
@@ -35,12 +37,16 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
 
     const onPresenceList = (list: PresenceUser[]) => setPresence(list);
     const onPresenceJoin = (user: PresenceUser) => addPresence(user);
-    const onPresenceLeave = (user: PresenceUser) => removePresence(user);
+    const onPresenceLeave = (user: PresenceUser) => {
+      removePresence(user);
+      removeCursor(user.id);
+    };
     const onCardUpsert = (card: CardItem) => applyCardUpsert(card);
     const onCardDelete = (payload: CardDeleteEvent) => applyCardDelete(payload);
     const onActivityList = (entries: ActivityEntry[]) => setActivity(entries);
     const onActivity = (entry: ActivityEntry) => addActivity(entry);
     const onCommentCreate = (comment: CommentItem) => addComment(comment);
+    const onCursorMove = (cursor: CursorPosition) => setCursor(cursor);
     const onSocketError = (payload: { message: string }) => {
       console.warn("[socket]", payload.message);
       setLastError({ message: payload.message, id: Date.now() });
@@ -61,6 +67,7 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
     socket.on("activity:list", onActivityList);
     socket.on("activity:new", onActivity);
     socket.on("comment:create", onCommentCreate);
+    socket.on("cursor:move", onCursorMove);
     socket.on("error", onSocketError);
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
@@ -78,6 +85,7 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
       socket.off("activity:list", onActivityList);
       socket.off("activity:new", onActivity);
       socket.off("comment:create", onCommentCreate);
+      socket.off("cursor:move", onCursorMove);
       socket.off("error", onSocketError);
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
@@ -95,6 +103,8 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
     setActivity,
     addActivity,
     addComment,
+    setCursor,
+    removeCursor,
   ]);
 
   return { connected, lastError };

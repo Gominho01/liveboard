@@ -11,6 +11,7 @@ import {
   cardUpdateSchema,
   commentCreateSchema,
   commentListSchema,
+  cursorMoveSchema,
 } from "./schemas.js";
 
 interface SocketUser {
@@ -320,6 +321,25 @@ export function registerSocketHandlers(io: Server): void {
         console.error("comment:list failed", err);
         socket.emit("error", { message: "Failed to load comments" });
       }
+    });
+
+    // Purely ephemeral — no Prisma write, no activity log entry. Position is
+    // sent as a 0-1 fraction of the board canvas, not raw pixels, so it stays
+    // meaningful across viewers with different window sizes.
+    socket.on("cursor:move", (payload: unknown) => {
+      const parsed = cursorMoveSchema.safeParse(payload);
+      if (!parsed.success) {
+        socket.emit("error", { message: "Invalid cursor:move payload" });
+        return;
+      }
+      const { boardId, x, y } = parsed.data;
+
+      if (!hasJoined(socket, boardId)) {
+        socket.emit("error", { message: "Join the board before editing it" });
+        return;
+      }
+
+      socket.to(boardRoom(boardId)).emit("cursor:move", { userId: user.id, name: user.name, x, y });
     });
 
     socket.on("disconnect", () => {

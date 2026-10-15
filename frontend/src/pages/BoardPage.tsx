@@ -1,16 +1,24 @@
 import { DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { BoardColumn } from "../components/BoardColumn";
 import { CardModal, type CardSaveData } from "../components/CardModal";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { CursorOverlay } from "../components/CursorOverlay";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceList } from "../components/PresenceList";
 import { useBoardSocket } from "../hooks/useBoardSocket";
 import { fetchBoard } from "../services/api";
-import { emitCardCreate, emitCardDelete, emitCardMove, emitCardUpdate } from "../services/socket";
+import {
+  emitCardCreate,
+  emitCardDelete,
+  emitCardMove,
+  emitCardUpdate,
+  emitCursorMove,
+} from "../services/socket";
 import { useAuthStore } from "../store/auth";
 import { useBoardStore } from "../store/board";
 import type { CardItem } from "../types";
@@ -28,6 +36,7 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
   const board = useBoardStore((s) => s.board);
   const presence = useBoardStore((s) => s.presence);
   const activity = useBoardStore((s) => s.activity);
+  const cursors = useBoardStore((s) => s.cursors);
   const setBoard = useBoardStore((s) => s.setBoard);
   const applyCardUpsert = useBoardStore((s) => s.applyCardUpsert);
   const applyCardDelete = useBoardStore((s) => s.applyCardDelete);
@@ -38,6 +47,7 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
   const [confirmDeleteCard, setConfirmDeleteCard] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [socketErrorMessage, setSocketErrorMessage] = useState<string | null>(null);
+  const lastCursorEmit = useRef(0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -95,6 +105,21 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
     const updatedCard: CardItem = { ...activeCard, columnId: targetColumnId, order: targetIndex };
     applyCardUpsert(updatedCard);
     emitCardMove({ boardId: board.id, cardId: activeCard.id, columnId: targetColumnId, order: targetIndex });
+  }
+
+  // Throttled to ~20/s — mousemove fires far more often than the socket
+  // needs, and position is sent as a 0-1 fraction of this container so it
+  // stays meaningful across viewers with different window sizes.
+  function handleMouseMove(event: ReactMouseEvent<HTMLDivElement>) {
+    if (!board) return;
+    const now = Date.now();
+    if (now - lastCursorEmit.current < 50) return;
+    lastCursorEmit.current = now;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+    emitCursorMove({ boardId: board.id, x, y });
   }
 
   function handleSaveCard({ title, description, dueDate, labelColor }: CardSaveData) {
@@ -172,7 +197,7 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
 
       <div className="board-layout">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="board-columns">
+          <div className="board-columns" onMouseMove={handleMouseMove}>
             {board.columns.map((column) => (
               <BoardColumn
                 key={column.id}
@@ -181,6 +206,7 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
                 onEditCard={(card) => setModalState({ columnId: card.columnId, card })}
               />
             ))}
+            <CursorOverlay cursors={cursors} />
           </div>
         </DndContext>
 

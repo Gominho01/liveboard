@@ -8,6 +8,7 @@ import type {
   CommentCreatePayload,
   CommentItem,
   CommentListPayload,
+  CursorMovePayload,
 } from "../types";
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? "http://localhost:3333";
@@ -59,4 +60,8 @@ export function emitCommentCreate(payload: CommentCreatePayload, onCreated: (com
 
 export function emitCommentList(payload: CommentListPayload, onList: (comments: CommentItem[]) => void): void {
   socket?.emit("comment:list", payload, onList);
+}
+
+export function emitCursorMove(payload: CursorMovePayload): void {
+  socket?.emit("cursor:move", payload);
 }

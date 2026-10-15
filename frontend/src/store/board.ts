@@ -6,6 +6,7 @@ import type {
   CardItem,
   ColumnItem,
   CommentItem,
+  CursorPosition,
   PresenceUser,
 } from "../types";
 
@@ -14,6 +15,7 @@ interface BoardState {
   presence: PresenceUser[];
   activity: ActivityEntry[];
   commentsByCardId: Record<string, CommentItem[]>;
+  cursors: Record<string, CursorPosition>;
   setBoard: (board: BoardData) => void;
   applyCardUpsert: (card: CardItem) => void;
   applyCardDelete: (payload: CardDeleteEvent) => void;
@@ -24,6 +26,8 @@ interface BoardState {
   addActivity: (entry: ActivityEntry) => void;
   setComments: (cardId: string, comments: CommentItem[]) => void;
   addComment: (comment: CommentItem) => void;
+  setCursor: (cursor: CursorPosition) => void;
+  removeCursor: (userId: string) => void;
   reset: () => void;
 }
 
@@ -45,6 +49,7 @@ export const useBoardStore = create<BoardState>((set) => ({
   presence: [],
   activity: [],
   commentsByCardId: {},
+  cursors: {},
 
   setBoard: (board) => set({ board }),
 
@@ -84,5 +89,15 @@ export const useBoardStore = create<BoardState>((set) => ({
       return { commentsByCardId: { ...state.commentsByCardId, [comment.cardId]: [...existing, comment] } };
     }),
 
-  reset: () => set({ board: null, presence: [], activity: [], commentsByCardId: {} }),
+  setCursor: (cursor) => set((state) => ({ cursors: { ...state.cursors, [cursor.userId]: cursor } })),
+
+  removeCursor: (userId) =>
+    set((state) => {
+      if (!(userId in state.cursors)) return state;
+      const cursors = { ...state.cursors };
+      delete cursors[userId];
+      return { cursors };
+    }),
+
+  reset: () => set({ board: null, presence: [], activity: [], commentsByCardId: {}, cursors: {} }),
 }));

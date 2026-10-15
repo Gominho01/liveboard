@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { connectSocket, disconnectSocket, joinBoard } from "../services/socket";
 import { useBoardStore } from "../store/board";
-import type { ActivityEntry, CardDeleteEvent, CardItem, PresenceUser } from "../types";
+import type { ActivityEntry, CardDeleteEvent, CardItem, CommentItem, PresenceUser } from "../types";
 
 interface SocketError {
   message: string;
@@ -23,6 +23,7 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
   const removePresence = useBoardStore((s) => s.removePresence);
   const setActivity = useBoardStore((s) => s.setActivity);
   const addActivity = useBoardStore((s) => s.addActivity);
+  const addComment = useBoardStore((s) => s.addComment);
 
   const [connected, setConnected] = useState(false);
   const [lastError, setLastError] = useState<SocketError | null>(null);
@@ -39,6 +40,7 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
     const onCardDelete = (payload: CardDeleteEvent) => applyCardDelete(payload);
     const onActivityList = (entries: ActivityEntry[]) => setActivity(entries);
     const onActivity = (entry: ActivityEntry) => addActivity(entry);
+    const onCommentCreate = (comment: CommentItem) => addComment(comment);
     const onSocketError = (payload: { message: string }) => {
       console.warn("[socket]", payload.message);
       setLastError({ message: payload.message, id: Date.now() });
@@ -58,6 +60,7 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
     socket.on("card:delete", onCardDelete);
     socket.on("activity:list", onActivityList);
     socket.on("activity:new", onActivity);
+    socket.on("comment:create", onCommentCreate);
     socket.on("error", onSocketError);
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
@@ -74,6 +77,7 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
       socket.off("card:delete", onCardDelete);
       socket.off("activity:list", onActivityList);
       socket.off("activity:new", onActivity);
+      socket.off("comment:create", onCommentCreate);
       socket.off("error", onSocketError);
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
@@ -90,6 +94,7 @@ export function useBoardSocket(token: string | null, boardId: string | null): Bo
     removePresence,
     setActivity,
     addActivity,
+    addComment,
   ]);
 
   return { connected, lastError };

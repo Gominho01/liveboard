@@ -9,6 +9,8 @@ import {
   cardDeleteSchema,
   cardMoveSchema,
   cardUpdateSchema,
+  commentCreateSchema,
+  commentListSchema,
 } from "./schemas.js";
 
 interface SocketUser {
@@ -245,6 +247,69 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         console.error("card:delete failed", err);
         socket.emit("error", { message: "Failed to delete card" });
+      }
+    });
+
+    socket.on("comment:create", async (payload: unknown, callback?: (comment: unknown) => void) => {
+      const parsed = commentCreateSchema.safeParse(payload);
+      if (!parsed.success) {
+        socket.emit("error", { message: "Invalid comment:create payload" });
+        return;
+      }
+      const { boardId, cardId, body } = parsed.data;
+
+      if (!hasJoined(socket, boardId)) {
+        socket.emit("error", { message: "Join the board before editing it" });
+        return;
+      }
+
+      try {
+        const card = await prisma.card.findUnique({ where: { id: cardId }, select: { title: true } });
+        if (!card) {
+          socket.emit("error", { message: "Card not found" });
+          return;
+        }
+
+        const comment = await prisma.comment.create({
+          data: { cardId, authorId: user.id, authorName: user.name, body },
+        });
+
+        // Same reasoning as card:create: the sender has no id for their own
+        // comment yet, so they get it via the ack callback; everyone else
+        // gets it via the room broadcast.
+        callback?.(comment);
+        socket.to(boardRoom(boardId)).emit("comment:create", comment);
+
+        const activity = await logActivity(boardId, user, `${user.name} commented on "${card.title}"`);
+        io.to(boardRoom(boardId)).emit("activity:new", activity);
+      } catch (err) {
+        console.error("comment:create failed", err);
+        socket.emit("error", { message: "Failed to create comment" });
+      }
+    });
+
+    socket.on("comment:list", async (payload: unknown, callback?: (comments: unknown) => void) => {
+      const parsed = commentListSchema.safeParse(payload);
+      if (!parsed.success) {
+        socket.emit("error", { message: "Invalid comment:list payload" });
+        return;
+      }
+      const { boardId, cardId } = parsed.data;
+
+      if (!hasJoined(socket, boardId)) {
+        socket.emit("error", { message: "Join the board before editing it" });
+        return;
+      }
+
+      try {
+        const comments = await prisma.comment.findMany({
+          where: { cardId },
+          orderBy: { createdAt: "asc" },
+        });
+        callback?.(comments);
+      } catch (err) {
+        console.error("comment:list failed", err);
+        socket.emit("error", { message: "Failed to load comments" });
       }
     });
 

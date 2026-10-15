@@ -87,3 +87,23 @@ export interface CardDeleteEvent {
   id: string;
   columnId: string;
 }
+
+export interface CommentItem {
+  id: string;
+  cardId: string;
+  authorId: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface CommentCreatePayload {
+  boardId: string;
+  cardId: string;
+  body: string;
+}
+
+export interface CommentListPayload {
+  boardId: string;
+  cardId: string;
+}

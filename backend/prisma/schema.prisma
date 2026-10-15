@@ -17,6 +17,7 @@ model User {
   boards        Board[]         @relation("BoardOwner")
   boardMembers  BoardMember[]
   activityLogs  ActivityLog[]
+  comments      Comment[]
 }
 
 model Board {
@@ -66,7 +67,22 @@ model Card {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  column   Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  comments Comment[]
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  cardId     String
+  authorId   String
+  // Denormalized alongside authorId, same reasoning as ActivityLog.message —
+  // renders without joining User on every comment fetch.
+  authorName String
+  body       String
+  createdAt  DateTime @default(now())
+
+  card   Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }
 
 model ActivityLog {

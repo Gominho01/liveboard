@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { createBoard, deleteBoard, leaveBoard, listBoards } from "../services/api";
 import { useAuthStore } from "../store/auth";
 import type { BoardSummary } from "../types";
@@ -88,6 +89,7 @@ export function BoardListPage({ onSelect }: BoardListPageProps) {
         <h1>Your boards</h1>
         <div className="board-header-right">
           {user && <p className="board-subtitle">Signed in as {user.name}</p>}
+          <ThemeToggle />
           <button type="button" className="link-button" onClick={logout}>
             Log out
           </button>

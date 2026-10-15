@@ -10,6 +10,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { CursorOverlay } from "../components/CursorOverlay";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceList } from "../components/PresenceList";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { useBoardSocket } from "../hooks/useBoardSocket";
 import { fetchBoard } from "../services/api";
 import {
@@ -219,6 +220,7 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
           <button type="button" className="link-button" onClick={() => setShowInvite(true)}>
             Invite
           </button>
+          <ThemeToggle />
           <button type="button" className="link-button" onClick={logout}>
             Log out
           </button>

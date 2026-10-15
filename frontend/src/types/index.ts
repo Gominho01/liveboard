@@ -15,6 +15,8 @@ export interface CardItem {
   title: string;
   description: string | null;
   order: number;
+  dueDate: string | null;
+  labelColor: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -62,6 +64,8 @@ export interface CardCreatePayload {
   columnId: string;
   title: string;
   description?: string;
+  dueDate?: string | null;
+  labelColor?: string | null;
 }
 
 export interface CardMovePayload {
@@ -76,6 +80,8 @@ export interface CardUpdatePayload {
   cardId: string;
   title?: string;
   description?: string;
+  dueDate?: string | null;
+  labelColor?: string | null;
 }
 
 export interface CardDeletePayload {

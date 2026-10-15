@@ -1,6 +1,6 @@
 # 🗂️ LiveBoard — Real-Time Collaborative Kanban
 
-> Status: **phase 2 implemented** — run `docker compose up -d && cd backend && npm run prisma:migrate` locally to try it.
+> Status: **phase 3 in progress** — run `docker compose up -d && cd backend && npm run prisma:migrate` locally to try it.
 
 ## 1. Overview
 
@@ -22,10 +22,11 @@ This project exists to prove, with public code, a skill that today only shows up
 1. **Multiple boards per user** — create your own boards, switch between them, and invite collaborators via a token-based invite link (regenerating it revokes the old one). ✅ done
 2. **Leave/delete a board** — a member can leave a board they no longer want to see; the owner can delete a board outright, cascading to its members, columns, cards, and activity log. ✅ done
 
-### Phase 3 (stretch goal)
+### Phase 3
 
-1. **Comments on cards** — a simple thread per card, also in real time.
-2. **Live cursors** — show other users' mouse position on the board (a "Figma-like" effect), purely cosmetic but a good teaching example for WebSockets.
+1. **Comments on cards** — a simple thread per card, also in real time. ✅ done
+2. **Colored labels and due dates** — a single optional color tag per card, plus a due date with an overdue highlight. ✅ done
+3. **Live cursors** (stretch) — show other users' mouse position on the board (a "Figma-like" effect), purely cosmetic but a good teaching example for WebSockets.
 
 ## 3. Stack
 
@@ -63,9 +64,9 @@ Each board is a Socket.io "room" (`board:<id>`). Emitted events: `card:create`, 
    - Board switcher (sidebar/list of boards the user belongs to). ✅ done
    - Leave a board (member) or delete it outright (owner). ✅ done
 4. **Phase 3 — richer collaboration**
-   - Real-time comments per card (simple thread).
+   - Real-time comments per card (simple thread). ✅ done
+   - Colored labels/tags and due dates on cards, with an overdue highlight. ✅ done
    - Live cursors from other connected users (Figma-style) — cosmetic, but a strong WebSockets showcase.
-   - Colored labels/tags and due dates on cards, with an overdue highlight.
 5. **Phase 4 — usability**
    - Search/filter cards on the board.
    - DiceBear avatars (same UX as freeroom) instead of initials in the presence list.

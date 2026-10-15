@@ -243,6 +243,68 @@ describe("card:create", () => {
     bob.close();
   });
 
+  it("passes dueDate and labelColor through to Prisma", async () => {
+    vi.mocked(prisma.column.findUnique).mockResolvedValue({
+      id: "col-1",
+      boardId: "board-3",
+      name: "To Do",
+      order: 0,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(prisma.card.count).mockResolvedValue(0);
+    vi.mocked(prisma.card.create).mockResolvedValue({
+      id: "card-2",
+      columnId: "col-1",
+      title: "With due date",
+      description: null,
+      order: 0,
+      dueDate: new Date("2026-12-01T00:00:00.000Z"),
+      labelColor: "#e03131",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(prisma.activityLog.create).mockResolvedValue({
+      id: "act-5",
+      boardId: "board-3",
+      userId: "u1",
+      message: 'Alice created "With due date" in To Do',
+      createdAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    alice.emit("board:join", "board-3");
+    await waitFor(alice, "presence:list");
+
+    await new Promise((resolve) => {
+      alice.emit(
+        "card:create",
+        {
+          boardId: "board-3",
+          columnId: "col-1",
+          title: "With due date",
+          dueDate: "2026-12-01T00:00:00.000Z",
+          labelColor: "#e03131",
+        },
+        resolve,
+      );
+    });
+
+    expect(prisma.card.create).toHaveBeenCalledWith({
+      data: {
+        columnId: "col-1",
+        title: "With due date",
+        description: undefined,
+        order: 0,
+        dueDate: new Date("2026-12-01T00:00:00.000Z"),
+        labelColor: "#e03131",
+      },
+    });
+
+    alice.close();
+  });
+
   it("emits an error and skips persistence when the column does not belong to the board", async () => {
     vi.mocked(prisma.column.findUnique).mockResolvedValue({
       id: "col-1",
@@ -313,6 +375,149 @@ describe("card:move", () => {
 
     alice.close();
     bob.close();
+  });
+});
+
+describe("card:update", () => {
+  it("updates title/description and broadcasts to other clients only", async () => {
+    vi.mocked(prisma.card.update).mockResolvedValue({
+      id: "card-10",
+      columnId: "col-1",
+      title: "Renamed",
+      description: "New description",
+      order: 0,
+      dueDate: null,
+      labelColor: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(prisma.activityLog.create).mockResolvedValue({
+      id: "act-6",
+      boardId: "board-11",
+      userId: "u1",
+      message: 'Alice updated "Renamed"',
+      createdAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    const bob = await connectClient(makeToken("u2", "Bob"));
+
+    alice.emit("board:join", "board-11");
+    await waitFor(alice, "presence:list");
+    bob.emit("board:join", "board-11");
+    await waitFor(bob, "presence:list");
+
+    const bobCardUpdate = waitFor<{ id: string; title: string }>(bob, "card:update");
+    alice.emit("card:update", {
+      boardId: "board-11",
+      cardId: "card-10",
+      title: "Renamed",
+      description: "New description",
+    });
+
+    await expect(bobCardUpdate).resolves.toMatchObject({ id: "card-10", title: "Renamed" });
+    expect(prisma.card.update).toHaveBeenCalledWith({
+      where: { id: "card-10" },
+      data: { title: "Renamed", description: "New description" },
+    });
+
+    alice.close();
+    bob.close();
+  });
+
+  it("sets a due date and label color without touching title/description", async () => {
+    vi.mocked(prisma.card.update).mockResolvedValue({
+      id: "card-12",
+      columnId: "col-1",
+      title: "Existing",
+      description: null,
+      order: 0,
+      dueDate: new Date("2026-12-01T00:00:00.000Z"),
+      labelColor: "#2f9e44",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(prisma.activityLog.create).mockResolvedValue({
+      id: "act-7",
+      boardId: "board-12",
+      userId: "u1",
+      message: 'Alice updated "Existing"',
+      createdAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    alice.emit("board:join", "board-12");
+    await waitFor(alice, "presence:list");
+
+    alice.emit("card:update", {
+      boardId: "board-12",
+      cardId: "card-12",
+      dueDate: "2026-12-01T00:00:00.000Z",
+      labelColor: "#2f9e44",
+    });
+    await waitFor(alice, "activity:new");
+
+    expect(prisma.card.update).toHaveBeenCalledWith({
+      where: { id: "card-12" },
+      data: { dueDate: new Date("2026-12-01T00:00:00.000Z"), labelColor: "#2f9e44" },
+    });
+
+    alice.close();
+  });
+
+  it("clears a due date and label color with an explicit null", async () => {
+    vi.mocked(prisma.card.update).mockResolvedValue({
+      id: "card-13",
+      columnId: "col-1",
+      title: "Existing",
+      description: null,
+      order: 0,
+      dueDate: null,
+      labelColor: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(prisma.activityLog.create).mockResolvedValue({
+      id: "act-8",
+      boardId: "board-13",
+      userId: "u1",
+      message: 'Alice updated "Existing"',
+      createdAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    alice.emit("board:join", "board-13");
+    await waitFor(alice, "presence:list");
+
+    alice.emit("card:update", { boardId: "board-13", cardId: "card-13", dueDate: null, labelColor: null });
+    await waitFor(alice, "activity:new");
+
+    expect(prisma.card.update).toHaveBeenCalledWith({
+      where: { id: "card-13" },
+      data: { dueDate: null, labelColor: null },
+    });
+
+    alice.close();
+  });
+
+  it("rejects a payload with none of title, description, dueDate, or labelColor", async () => {
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    alice.emit("board:join", "board-14");
+    await waitFor(alice, "presence:list");
+
+    const errorEvent = waitFor(alice, "error");
+    alice.emit("card:update", { boardId: "board-14", cardId: "card-14" });
+
+    await errorEvent;
+    expect(prisma.card.update).not.toHaveBeenCalled();
+
+    alice.close();
   });
 });
 

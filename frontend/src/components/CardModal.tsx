@@ -9,6 +9,15 @@ import type { CardItem } from "../types";
 // array identity on every call (which would trigger an infinite render loop).
 const NO_COMMENTS: never[] = [];
 
+const LABEL_COLORS: { value: string; name: string }[] = [
+  { value: "#e03131", name: "Red" },
+  { value: "#f08c00", name: "Orange" },
+  { value: "#f5c518", name: "Yellow" },
+  { value: "#2f9e44", name: "Green" },
+  { value: "#1971c2", name: "Blue" },
+  { value: "#9c36b5", name: "Purple" },
+];
+
 function formatTime(iso: string): string {
   try {
     return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -17,10 +26,17 @@ function formatTime(iso: string): string {
   }
 }
 
+export interface CardSaveData {
+  title: string;
+  description: string;
+  dueDate: string | null;
+  labelColor: string | null;
+}
+
 interface CardModalProps {
   boardId: string;
   card?: CardItem;
-  onSave: (title: string, description: string) => void;
+  onSave: (data: CardSaveData) => void;
   onDelete?: () => void;
   onClose: () => void;
 }
@@ -29,6 +45,8 @@ export function CardModal({ boardId, card, onSave, onDelete, onClose }: CardModa
   const { ref, titleId } = useDialogA11y<HTMLFormElement>(onClose);
   const [title, setTitle] = useState(card?.title ?? "");
   const [description, setDescription] = useState(card?.description ?? "");
+  const [dueDate, setDueDate] = useState(card?.dueDate ? card.dueDate.slice(0, 10) : "");
+  const [labelColor, setLabelColor] = useState<string | null>(card?.labelColor ?? null);
   const [commentBody, setCommentBody] = useState("");
 
   const comments = useBoardStore((s) => (card ? (s.commentsByCardId[card.id] ?? NO_COMMENTS) : NO_COMMENTS));
@@ -44,7 +62,12 @@ export function CardModal({ boardId, card, onSave, onDelete, onClose }: CardModa
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) return;
-    onSave(title.trim(), description.trim());
+    onSave({
+      title: title.trim(),
+      description: description.trim(),
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      labelColor,
+    });
   }
 
   function handlePostComment() {
@@ -77,6 +100,37 @@ export function CardModal({ boardId, card, onSave, onDelete, onClose }: CardModa
           Description
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
         </label>
+
+        <label>
+          Due date
+          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        </label>
+
+        <div className="label-picker">
+          <span className="label-picker-title">Label</span>
+          <div className="label-swatches" role="group" aria-label="Label color">
+            {LABEL_COLORS.map((color) => {
+              const selected = labelColor === color.value;
+              return (
+                <button
+                  key={color.value}
+                  type="button"
+                  className={`label-swatch${selected ? " label-swatch-selected" : ""}`}
+                  aria-label={`${color.name} label`}
+                  aria-pressed={selected}
+                  onClick={() => setLabelColor(selected ? null : color.value)}
+                >
+                  <span className="label-dot" style={{ background: color.value }} aria-hidden="true" />
+                  {selected && (
+                    <span className="label-swatch-check" aria-hidden="true">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {card && (
           <div className="comment-section">

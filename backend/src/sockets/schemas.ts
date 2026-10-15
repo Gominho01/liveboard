@@ -2,11 +2,20 @@ import { z } from "zod";
 
 export const boardJoinSchema = z.string().min(1);
 
+const dueDateSchema = z.string().datetime().nullable().optional();
+const labelColorSchema = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{6}$/)
+  .nullable()
+  .optional();
+
 export const cardCreateSchema = z.object({
   boardId: z.string().min(1),
   columnId: z.string().min(1),
   title: z.string().min(1),
   description: z.string().optional(),
+  dueDate: dueDateSchema,
+  labelColor: labelColorSchema,
 });
 
 export const cardMoveSchema = z.object({
@@ -22,10 +31,17 @@ export const cardUpdateSchema = z
     cardId: z.string().min(1),
     title: z.string().min(1).optional(),
     description: z.string().optional(),
+    dueDate: dueDateSchema,
+    labelColor: labelColorSchema,
   })
-  .refine((data) => data.title !== undefined || data.description !== undefined, {
-    message: "At least one of title or description must be provided",
-  });
+  .refine(
+    (data) =>
+      data.title !== undefined ||
+      data.description !== undefined ||
+      data.dueDate !== undefined ||
+      data.labelColor !== undefined,
+    { message: "At least one of title, description, dueDate, or labelColor must be provided" },
+  );
 
 export const cardDeleteSchema = z.object({
   boardId: z.string().min(1),

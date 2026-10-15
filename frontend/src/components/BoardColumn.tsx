@@ -22,7 +22,7 @@ export function BoardColumn({ column, onAddCard, onEditCard }: BoardColumnProps)
       <div ref={setNodeRef} className="board-column-cards">
         <SortableContext items={column.cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           {column.cards.map((card) => (
-            <CardTile key={card.id} card={card} onEdit={onEditCard} />
+            <CardTile key={card.id} card={card} isDoneColumn={column.name === "Done"} onEdit={onEditCard} />
           ))}
         </SortableContext>
       </div>

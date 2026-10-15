@@ -117,6 +117,16 @@ button {
   gap: 16px;
 }
 
+.board-search {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
+  font: inherit;
+  padding: 6px 10px;
+  width: 160px;
+}
+
 .board-loading,
 .board-error {
   padding: 32px;

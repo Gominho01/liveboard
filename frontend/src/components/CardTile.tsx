@@ -10,22 +10,34 @@ function formatDueDate(iso: string): string {
   return new Date(iso).toLocaleDateString([], { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
+function matchesSearch(card: CardItem, search: string): boolean {
+  const term = search.trim().toLowerCase();
+  if (!term) return true;
+  return card.title.toLowerCase().includes(term) || (card.description ?? "").toLowerCase().includes(term);
+}
+
 interface CardTileProps {
   card: CardItem;
   isDoneColumn: boolean;
+  search: string;
   onEdit: (card: CardItem) => void;
 }
 
-export function CardTile({ card, isDoneColumn, onEdit }: CardTileProps) {
+export function CardTile({ card, isDoneColumn, search, onEdit }: CardTileProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { columnId: card.columnId },
   });
 
+  const hidden = !matchesSearch(card, search);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    // Stays mounted (not removed from the array) so dnd-kit's SortableContext
+    // index math is unaffected by an active search — only visually hidden.
+    display: hidden ? "none" : undefined,
   };
 
   const isOverdue = !isDoneColumn && !!card.dueDate && new Date(card.dueDate) < new Date();
@@ -46,6 +58,7 @@ export function CardTile({ card, isDoneColumn, onEdit }: CardTileProps) {
       ref={setNodeRef}
       style={style}
       className="card-tile"
+      aria-hidden={hidden}
       {...attributes}
       {...listeners}
       onKeyDown={handleKeyDown}

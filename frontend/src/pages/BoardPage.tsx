@@ -47,7 +47,9 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
   const [confirmDeleteCard, setConfirmDeleteCard] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [socketErrorMessage, setSocketErrorMessage] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const lastCursorEmit = useRef(0);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -77,6 +79,25 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
     const timer = setTimeout(() => setSocketErrorMessage(null), 5000);
     return () => clearTimeout(timer);
   }, [lastError]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = document.activeElement;
+      const isEditable = target instanceof HTMLElement && (target.tagName === "INPUT" || target.tagName === "TEXTAREA");
+      if (isEditable) return;
+
+      if (event.key === "/") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (event.key === "n" && board && board.columns.length > 0) {
+        event.preventDefault();
+        setModalState({ columnId: board.columns[0]!.id });
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [board]);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -185,6 +206,15 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
             <span aria-hidden="true" className="connection-dot" />
             {connected ? "Live" : "Offline"}
           </span>
+          <input
+            ref={searchInputRef}
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search cards… (/)"
+            aria-label="Search cards"
+            className="board-search"
+          />
           <PresenceList users={presence} />
           <button type="button" className="link-button" onClick={() => setShowInvite(true)}>
             Invite
@@ -202,6 +232,7 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
               <BoardColumn
                 key={column.id}
                 column={column}
+                search={search}
                 onAddCard={(columnId) => setModalState({ columnId })}
                 onEditCard={(card) => setModalState({ columnId: card.columnId, card })}
               />

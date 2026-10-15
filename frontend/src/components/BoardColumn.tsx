@@ -5,11 +5,12 @@ import { CardTile } from "./CardTile";
 
 interface BoardColumnProps {
   column: ColumnItem;
+  search: string;
   onAddCard: (columnId: string) => void;
   onEditCard: (card: CardItem) => void;
 }
 
-export function BoardColumn({ column, onAddCard, onEditCard }: BoardColumnProps) {
+export function BoardColumn({ column, search, onAddCard, onEditCard }: BoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
   return (
@@ -22,7 +23,13 @@ export function BoardColumn({ column, onAddCard, onEditCard }: BoardColumnProps)
       <div ref={setNodeRef} className="board-column-cards">
         <SortableContext items={column.cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           {column.cards.map((card) => (
-            <CardTile key={card.id} card={card} isDoneColumn={column.name === "Done"} onEdit={onEditCard} />
+            <CardTile
+              key={card.id}
+              card={card}
+              isDoneColumn={column.name === "Done"}
+              search={search}
+              onEdit={onEditCard}
+            />
           ))}
         </SortableContext>
       </div>

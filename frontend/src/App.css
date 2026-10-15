@@ -122,9 +122,9 @@ button {
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-h);
-  font: inherit;
+  font-size: 14px;
   padding: 6px 10px;
-  width: 160px;
+  width: 180px;
 }
 
 .board-loading,

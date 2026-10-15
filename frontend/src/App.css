@@ -240,6 +240,43 @@ button {
   display: flex;
   flex: 1;
   gap: 16px;
+  position: relative;
+}
+
+/* Live cursors */
+
+.cursor-overlay {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-2px, -2px);
+  z-index: 10;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cursor-overlay {
+    transition:
+      left 0.1s linear,
+      top 0.1s linear;
+  }
+}
+
+.cursor-dot {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--bg);
+  display: block;
+  height: 10px;
+  width: 10px;
+}
+
+.cursor-label {
+  border-radius: 4px;
+  color: white;
+  font-size: 11px;
+  padding: 1px 6px;
+  white-space: nowrap;
 }
 
 .board-column {

@@ -1,6 +1,6 @@
 # 🗂️ LiveBoard — Real-Time Collaborative Kanban
 
-> Status: **phase 3 in progress** — run `docker compose up -d && cd backend && npm run prisma:migrate` locally to try it.
+> Status: **phase 3 implemented** — run `docker compose up -d && cd backend && npm run prisma:migrate` locally to try it.
 
 ## 1. Overview
 
@@ -26,7 +26,7 @@ This project exists to prove, with public code, a skill that today only shows up
 
 1. **Comments on cards** — a simple thread per card, also in real time. ✅ done
 2. **Colored labels and due dates** — a single optional color tag per card, plus a due date with an overdue highlight. ✅ done
-3. **Live cursors** (stretch) — show other users' mouse position on the board (a "Figma-like" effect), purely cosmetic but a good teaching example for WebSockets.
+3. **Live cursors** — other connected users' mouse position on the board (Figma-style), with a name label and a per-user color. ✅ done
 
 ## 3. Stack
 
@@ -53,7 +53,7 @@ This project exists to prove, with public code, a skill that today only shows up
                                                        |-- One socket room per board (board:<id>)
 ```
 
-Each board is a Socket.io "room" (`board:<id>`). Emitted events: `card:create`, `card:move`, `card:update`, `card:delete`, `presence:join`, `presence:leave`. The server persists to Postgres and re-emits the event to every other client in the same room.
+Each board is a Socket.io "room" (`board:<id>`). Emitted events: `card:create`, `card:move`, `card:update`, `card:delete`, `comment:create`, `presence:join`, `presence:leave`, `cursor:move`. The server persists to Postgres and re-emits the event to every other client in the same room — except `cursor:move`, which is purely ephemeral (no database write).
 
 ## 5. Suggested roadmap
 
@@ -66,7 +66,7 @@ Each board is a Socket.io "room" (`board:<id>`). Emitted events: `card:create`, 
 4. **Phase 3 — richer collaboration**
    - Real-time comments per card (simple thread). ✅ done
    - Colored labels/tags and due dates on cards, with an overdue highlight. ✅ done
-   - Live cursors from other connected users (Figma-style) — cosmetic, but a strong WebSockets showcase.
+   - Live cursors from other connected users (Figma-style) — cosmetic, but a strong WebSockets showcase. ✅ done
 5. **Phase 4 — usability**
    - Search/filter cards on the board.
    - DiceBear avatars (same UX as freeroom) instead of initials in the presence list.

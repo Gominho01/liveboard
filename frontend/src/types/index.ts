@@ -113,3 +113,16 @@ export interface CommentListPayload {
   boardId: string;
   cardId: string;
 }
+
+export interface CursorMovePayload {
+  boardId: string;
+  x: number;
+  y: number;
+}
+
+export interface CursorPosition {
+  userId: string;
+  name: string;
+  x: number;
+  y: number;
+}

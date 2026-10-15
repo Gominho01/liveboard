@@ -59,9 +59,16 @@ export const commentListSchema = z.object({
   cardId: z.string().min(1),
 });
 
+export const cursorMoveSchema = z.object({
+  boardId: z.string().min(1),
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+});
+
 export type CardCreatePayload = z.infer<typeof cardCreateSchema>;
 export type CardMovePayload = z.infer<typeof cardMoveSchema>;
 export type CardUpdatePayload = z.infer<typeof cardUpdateSchema>;
 export type CardDeletePayload = z.infer<typeof cardDeleteSchema>;
 export type CommentCreatePayload = z.infer<typeof commentCreateSchema>;
 export type CommentListPayload = z.infer<typeof commentListSchema>;
+export type CursorMovePayload = z.infer<typeof cursorMoveSchema>;

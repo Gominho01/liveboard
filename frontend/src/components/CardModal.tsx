@@ -4,19 +4,11 @@ import { useDialogA11y } from "../hooks/useDialogA11y";
 import { emitCommentCreate, emitCommentList } from "../services/socket";
 import { useBoardStore } from "../store/board";
 import type { CardItem } from "../types";
+import { PALETTE as LABEL_COLORS } from "../utils/userColor";
 
 // A stable reference, so the Zustand selector below doesn't return a new
 // array identity on every call (which would trigger an infinite render loop).
 const NO_COMMENTS: never[] = [];
-
-const LABEL_COLORS: { value: string; name: string }[] = [
-  { value: "#e03131", name: "Red" },
-  { value: "#f08c00", name: "Orange" },
-  { value: "#f5c518", name: "Yellow" },
-  { value: "#2f9e44", name: "Green" },
-  { value: "#1971c2", name: "Blue" },
-  { value: "#9c36b5", name: "Purple" },
-];
 
 function formatTime(iso: string): string {
   try {

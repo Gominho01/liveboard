@@ -5,6 +5,7 @@ import type {
   CardDeleteEvent,
   CardItem,
   ColumnItem,
+  CommentItem,
   PresenceUser,
 } from "../types";
 
@@ -12,6 +13,7 @@ interface BoardState {
   board: BoardData | null;
   presence: PresenceUser[];
   activity: ActivityEntry[];
+  commentsByCardId: Record<string, CommentItem[]>;
   setBoard: (board: BoardData) => void;
   applyCardUpsert: (card: CardItem) => void;
   applyCardDelete: (payload: CardDeleteEvent) => void;
@@ -20,6 +22,8 @@ interface BoardState {
   removePresence: (user: PresenceUser) => void;
   setActivity: (entries: ActivityEntry[]) => void;
   addActivity: (entry: ActivityEntry) => void;
+  setComments: (cardId: string, comments: CommentItem[]) => void;
+  addComment: (comment: CommentItem) => void;
   reset: () => void;
 }
 
@@ -40,6 +44,7 @@ export const useBoardStore = create<BoardState>((set) => ({
   board: null,
   presence: [],
   activity: [],
+  commentsByCardId: {},
 
   setBoard: (board) => set({ board }),
 
@@ -69,5 +74,15 @@ export const useBoardStore = create<BoardState>((set) => ({
   addActivity: (entry) =>
     set((state) => (state.activity.some((a) => a.id === entry.id) ? state : { activity: [entry, ...state.activity].slice(0, 50) })),
 
-  reset: () => set({ board: null, presence: [], activity: [] }),
+  setComments: (cardId, comments) =>
+    set((state) => ({ commentsByCardId: { ...state.commentsByCardId, [cardId]: comments } })),
+
+  addComment: (comment) =>
+    set((state) => {
+      const existing = state.commentsByCardId[comment.cardId] ?? [];
+      if (existing.some((c) => c.id === comment.id)) return state;
+      return { commentsByCardId: { ...state.commentsByCardId, [comment.cardId]: [...existing, comment] } };
+    }),
+
+  reset: () => set({ board: null, presence: [], activity: [], commentsByCardId: {} }),
 }));

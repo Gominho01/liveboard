@@ -5,6 +5,9 @@ import type {
   CardItem,
   CardMovePayload,
   CardUpdatePayload,
+  CommentCreatePayload,
+  CommentItem,
+  CommentListPayload,
 } from "../types";
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? "http://localhost:3333";
@@ -46,4 +49,14 @@ export function emitCardUpdate(payload: CardUpdatePayload): void {
 
 export function emitCardDelete(payload: CardDeletePayload): void {
   socket?.emit("card:delete", payload);
+}
+
+/** Ack-based, same reasoning as emitCardCreate: the sender has no id for
+ * their own comment yet, so they get it back directly via the callback. */
+export function emitCommentCreate(payload: CommentCreatePayload, onCreated: (comment: CommentItem) => void): void {
+  socket?.emit("comment:create", payload, onCreated);
+}
+
+export function emitCommentList(payload: CommentListPayload, onList: (comments: CommentItem[]) => void): void {
+  socket?.emit("comment:list", payload, onList);
 }

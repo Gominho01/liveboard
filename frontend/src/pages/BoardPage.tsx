@@ -180,6 +180,7 @@ export function BoardPage({ boardId, onBack }: BoardPageProps) {
 
       {modalState && (
         <CardModal
+          boardId={board.id}
           card={modalState.card}
           onSave={handleSaveCard}
           onDelete={modalState.card ? () => setConfirmDeleteCard(true) : undefined}

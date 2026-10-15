@@ -15,7 +15,8 @@ import { env } from "../config/env.js";
 vi.mock("../config/prisma.js", () => ({
   prisma: {
     column: { findUnique: vi.fn() },
-    card: { count: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    card: { count: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(), findUnique: vi.fn() },
+    comment: { create: vi.fn(), findMany: vi.fn() },
     activityLog: { create: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
@@ -312,6 +313,104 @@ describe("card:move", () => {
 
     alice.close();
     bob.close();
+  });
+});
+
+describe("comment:create", () => {
+  it("persists via Prisma, acks the sender, and broadcasts to other clients only", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(prisma.card.findUnique).mockResolvedValue({ title: "Discuss this" } as any);
+    vi.mocked(prisma.comment.create).mockResolvedValue({
+      id: "comment-1",
+      cardId: "card-1",
+      authorId: "u1",
+      authorName: "Alice",
+      body: "Looks good",
+      createdAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(prisma.activityLog.create).mockResolvedValue({
+      id: "act-4",
+      boardId: "board-8",
+      userId: "u1",
+      message: 'Alice commented on "Discuss this"',
+      createdAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    const bob = await connectClient(makeToken("u2", "Bob"));
+
+    alice.emit("board:join", "board-8");
+    await waitFor(alice, "presence:list");
+    bob.emit("board:join", "board-8");
+    await waitFor(bob, "presence:list");
+
+    const bobCommentCreate = waitFor<{ id: string; body: string }>(bob, "comment:create");
+    const bobActivity = waitFor(bob, "activity:new");
+    let aliceReceivedBroadcast = false;
+    alice.once("comment:create", () => {
+      aliceReceivedBroadcast = true;
+    });
+
+    const ack = await new Promise((resolve) => {
+      alice.emit("comment:create", { boardId: "board-8", cardId: "card-1", body: "Looks good" }, resolve);
+    });
+
+    expect(ack).toMatchObject({ id: "comment-1", body: "Looks good" });
+    await expect(bobCommentCreate).resolves.toMatchObject({ id: "comment-1", body: "Looks good" });
+    await bobActivity;
+    expect(aliceReceivedBroadcast).toBe(false);
+
+    expect(prisma.comment.create).toHaveBeenCalledWith({
+      data: { cardId: "card-1", authorId: "u1", authorName: "Alice", body: "Looks good" },
+    });
+
+    alice.close();
+    bob.close();
+  });
+
+  it("emits an error and skips persistence when the card doesn't exist", async () => {
+    vi.mocked(prisma.card.findUnique).mockResolvedValue(null);
+
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    alice.emit("board:join", "board-9");
+    await waitFor(alice, "presence:list");
+
+    const errorEvent = waitFor(alice, "error");
+    alice.emit("comment:create", { boardId: "board-9", cardId: "missing-card", body: "Hello" });
+
+    await errorEvent;
+    expect(prisma.comment.create).not.toHaveBeenCalled();
+
+    alice.close();
+  });
+});
+
+describe("comment:list", () => {
+  it("acks the caller with the card's comments, oldest first", async () => {
+    const createdAt = new Date();
+    const comments = [
+      { id: "comment-1", cardId: "card-1", authorId: "u2", authorName: "Bob", body: "First", createdAt },
+    ];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(prisma.comment.findMany).mockResolvedValue(comments as any);
+
+    const alice = await connectClient(makeToken("u1", "Alice"));
+    alice.emit("board:join", "board-10");
+    await waitFor(alice, "presence:list");
+
+    const ack = await new Promise((resolve) => {
+      alice.emit("comment:list", { boardId: "board-10", cardId: "card-1" }, resolve);
+    });
+
+    expect(ack).toMatchObject([{ id: "comment-1", body: "First" }]);
+    expect(prisma.comment.findMany).toHaveBeenCalledWith({
+      where: { cardId: "card-1" },
+      orderBy: { createdAt: "asc" },
+    });
+
+    alice.close();
   });
 });
 

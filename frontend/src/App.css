@@ -443,6 +443,83 @@ button {
   padding: 8px 16px;
 }
 
+/* Comments */
+
+.comment-section {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.comment-section h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.comment-empty {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 12px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.comment-item {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.comment-meta {
+  display: flex;
+  font-size: 11px;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.comment-author {
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.comment-time {
+  color: var(--text);
+}
+
+.comment-body {
+  font-size: 13px;
+  margin: 2px 0 0;
+}
+
+.comment-form {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-form textarea {
+  flex: 1;
+}
+
+.comment-form button {
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  padding: 0 16px;
+}
+
+.comment-form button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 /* Connection status */
 
 .connection-status {
